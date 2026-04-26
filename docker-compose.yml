@@ -1,0 +1,43 @@
+services:
+  backend:
+    build: ./backend
+    container_name: metro-backend
+    environment:
+      PORT: 8000
+      LOG_LEVEL: info
+      CORS_ORIGINS: "*"
+      BACKEND_URL: http://127.0.0.1:8000/api/density
+      NUM_TRAINS: 11
+      WAGONS_PER_TRAIN: 5
+      TRANSITION_STEPS: 30
+      TRANSITION_INTERVAL: 1
+      BOARDING_STEPS: 10
+      IDLE_SECONDS: 5
+      STARTUP_DELAY: 3
+    ports:
+      - "8000:8000"
+    networks:
+      - metro-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/api/health', timeout=2).status == 200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  frontend:
+    build: ./frontend
+    container_name: metro-frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
+      VITE_NUM_TRAINS: 10
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - metro-net
+
+networks:
+  metro-net:
+    driver: bridge
